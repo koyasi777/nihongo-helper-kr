@@ -14,3 +14,7 @@
 **"왜 그렇게 번역되는지"**, **"이럴 땐 어떻게 말하는지"** 까지도 자연스럽게 체득할 수 있도록 돕습니다.
 
 일본어를 깊이 있게 배우고 싶은 당신을 위한 최고의 도우미가 되어드릴게요.
+
+## 🧾 License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
