@@ -3,77 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>📝 翻訳アプリ</title>
+  <title>📝 日韓翻訳アプリ</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .app-container { max-width: 960px; margin: auto; background: #fff; padding: 2rem; border-radius: 1rem; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+    .lang-label { font-weight: bold; font-size: 0.9rem; color: #495057; margin-bottom: 0.5rem; }
+    .hyphen-code { letter-spacing: 0.3em; font-family: monospace; }
+  </style>
 </head>
 <body class="bg-light">
-  <div class="container py-4">
-    <div class="d-flex justify-content-end mb-3">
-      <span id="userEmail" class="me-3"></span>
-      <button id="loginBtn" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#loginModal">ログイン</button>
-      <button id="registerBtn" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#registerModal">新規登録</button>
-      <button id="logoutBtn" class="btn btn-danger me-2 d-none">ログアウト</button>
-      <button id="apiKeyBtn" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#apiKeyModal">APIキー設定</button>
-      <button id="bookmarkBtn" class="btn btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#bookmarkSidebar" hidden>📚 ブックマーク</button>
+  <!-- Navbar with Offcanvas for Mobile -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <i class="bi bi-translate fs-3 me-2"></i><span class="h5 mb-0">日韓翻訳アプリ</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto align-items-center d-none d-lg-flex">
+          <li class="nav-item me-2">
+            <button id="apiKeyBtn" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#apiKeyModal">APIキー設定</button>
+          </li>
+          <li class="nav-item me-2" id="bookmarkNavItem">
+            <button id="bookmarkBtn" class="btn btn-outline-primary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#bookmarkSidebar">📚 ブックマーク</button>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="accountBtn" class="nav-link dropdown-toggle p-0" href="#" role="button" data-bs-toggle="dropdown">
+              <i class="bi bi-person-circle fs-4"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountBtn" id="accountMenu">
+              <li id="loginMenuItem"><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#accountModal">アカウント</a></li>
+              <li id="logoutMenuItem" class="d-none"><a class="dropdown-item" href="#" id="logoutBtn">ログアウト</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
     </div>
+  </nav>
 
-    <div class="row">
+  <!-- Offcanvas Mobile Menu -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileMenu">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">メニュー</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="d-grid gap-2">
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#apiKeyModal">APIキー設定</button>
+        <button id="mobileBookmarkBtn" class="btn btn-outline-primary">📚 ブックマーク</button>
+        <button id="mobileAccountBtn" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#accountModal">アカウント</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <div class="row g-4">
       <div class="col-md-6">
-        <div class="mb-2"><span id="srcInfo">翻訳元</span></div>
+        <div class="lang-label" id="srcInfo">翻訳元</div>
         <textarea id="inputText" class="form-control mb-3" rows="6" placeholder="ここに翻訳したいテキストを入力…"></textarea>
-        <button id="translateBtn" class="btn btn-primary me-2">翻訳する</button>
-        <button id="saveBtn" class="btn btn-success" disabled>🔖 ブックマーク</button>
+        <div class="d-grid gap-2 d-md-flex">
+          <button id="translateBtn" class="btn btn-primary me-2">翻訳する</button>
+          <button id="saveBtn" class="btn btn-success" disabled>🔖 ブックマーク</button>
+        </div>
       </div>
       <div class="col-md-6">
-        <div class="mb-2"><span id="tgtInfo">翻訳先</span></div>
+        <div class="lang-label" id="tgtInfo">翻訳先</div>
         <div id="result" class="border bg-white p-3" style="min-height: 240px;">
           <div class="text-muted text-center py-5">翻訳結果がここに表示されます</div>
         </div>
       </div>
     </div>
-
-    <!-- Offcanvas Sidebar for Bookmarks -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="bookmarkSidebar">
-      <div class="offcanvas-header">
-        <h5 class="offcanvas-title">📚 ブックマーク</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-      </div>
-      <div class="offcanvas-body" id="bookmarkList"></div>
-    </div>
   </div>
 
-  <!-- Modals -->
-  <!-- Login Modal -->
-  <div class="modal fade" id="loginModal" tabindex="-1">
+  <!-- Offcanvas Sidebar for Bookmarks -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="bookmarkSidebar">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">📚 ブックマーク</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body" id="bookmarkList"></div>
+  </div>
+
+  <!-- Account Modal with Code Tabs -->
+  <div class="modal fade" id="accountModal" tabindex="-1">
     <div class="modal-dialog"><div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">ログイン</h5>
+        <h5 class="modal-title">アカウント</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <input id="loginEmail" type="email" class="form-control mb-2" placeholder="メールアドレス">
-        <input id="loginPassword" type="password" class="form-control" placeholder="パスワード">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#loginPane">ログイン</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#registerPane">新規登録</button></li>
+        </ul>
+        <div class="tab-content">
+          <!-- Login Pane -->
+          <div class="tab-pane fade show active" id="loginPane">
+            <input id="loginCode" type="text" class="form-control mb-2 hyphen-code" placeholder="XXXX-XXXX-XXXX-XXXX">
+          </div>
+          <!-- Register Pane -->
+          <div class="tab-pane fade" id="registerPane">
+            <div class="mb-2">
+              <div id="generatedCode" class="hyphen-code fs-5 text-center">0000-0000-0000-0000</div>
+            </div>
+            <button id="generateCodeBtn" class="btn btn-outline-primary w-100">コードを生成</button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button id="loginSubmitBtn" type="button" class="btn btn-primary">ログイン</button>
-      </div>
-    </div></div>
-  </div>
-
-  <!-- Register Modal -->
-  <div class="modal fade" id="registerModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">新規登録</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input id="registerEmail" type="email" class="form-control mb-2" placeholder="メールアドレス">
-        <input id="registerPassword" type="password" class="form-control" placeholder="パスワード">
-      </div>
-      <div class="modal-footer">
         <button id="registerSubmitBtn" type="button" class="btn btn-success">登録</button>
       </div>
     </div></div>
