@@ -2,7 +2,6 @@ import { db } from './firebase-config.js';
 import { collection, addDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // Elements
-const mobileMenu = document.getElementById('mobileMenu');
 const mobileBookmarkBtn = document.getElementById('mobileBookmarkBtn');
 const apiKeyInput = document.getElementById('apiKeyInput');
 const apiKeySaveBtn = document.getElementById('apiKeySaveBtn');
@@ -14,11 +13,14 @@ const srcInfo = document.getElementById('srcInfo');
 const tgtInfo = document.getElementById('tgtInfo');
 const bookmarkBtn = document.getElementById('bookmarkBtn');
 const bookmarkList = document.getElementById('bookmarkList');
-const loginCode = document.getElementById('loginCode');
-const generatedCode = document.getElementById('generatedCode');
-const generateCodeBtn = document.getElementById('generateCodeBtn');
+const loginTab = document.getElementById('login-tab');
+const registerTab = document.getElementById('register-tab');
 const loginSubmitBtn = document.getElementById('loginSubmitBtn');
 const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+const generateCodeBtn = document.getElementById('generateCodeBtn');
+const generatedCode = document.getElementById('generatedCode');
+const copyCodeBtn = document.getElementById('copyCodeBtn');
+const loginCode = document.getElementById('loginCode');
 
 let currentTranslation = '';
 let currentLangs = {};
@@ -27,7 +29,7 @@ let userCode = localStorage.getItem('userCode') || null;
 // Offcanvas bookmark trigger for mobile
 mobileBookmarkBtn.addEventListener('click', () => {
   bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('bookmarkSidebar')).show();
-  bootstrap.Offcanvas.getOrCreateInstance(mobileMenu).hide();
+  bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('mobileMenu')).hide();
 });
 
 // API Key handling
@@ -37,11 +39,35 @@ apiKeySaveBtn.addEventListener('click', () => {
   bootstrap.Modal.getInstance(document.getElementById('apiKeyModal')).hide();
 });
 
-// Account: code generation and login
-function formatCode(raw) {
-  return raw.match(/.{1,4}/g).join('-');
+// Tab button visibility
+function updateAccountButtons() {
+  if (loginTab.classList.contains('active')) {
+    loginSubmitBtn.classList.remove('d-none');
+    registerSubmitBtn.classList.add('d-none');
+  } else {
+    loginSubmitBtn.classList.add('d-none');
+    registerSubmitBtn.classList.remove('d-none');
+  }
 }
+loginTab.addEventListener('shown.bs.tab', updateAccountButtons);
+registerTab.addEventListener('shown.bs.tab', updateAccountButtons);
+// Initial state
+updateAccountButtons();
 
+// Code generation & copy
+function formatCode(raw) { return raw.match(/.{1,4}/g).join('-'); }
+generateCodeBtn.addEventListener('click', () => {
+  const raw = Array.from({length:16},()=>(Math.floor(Math.random()*10))).join('');
+  const formatted = formatCode(raw);
+  generatedCode.textContent = formatted;
+  copyCodeBtn.classList.remove('d-none');
+});
+copyCodeBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(generatedCode.textContent.replace(/-/g, '')).then(() => {
+    copyCodeBtn.textContent = 'コピー完了';
+    setTimeout(() => copyCodeBtn.textContent = 'コピー', 2000);
+  });
+});
 generateCodeBtn.addEventListener('click', () => {
   const raw = Array.from({length:16},()=>(Math.floor(Math.random()*10))).join('');
   const formatted = formatCode(raw);
