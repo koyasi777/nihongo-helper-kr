@@ -1,31 +1,102 @@
-<!-- index.html (親) -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      overflow: hidden;
-    }
-    iframe {
-      border: none;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
-  <script>
-    window.onload = () => {
-      const iframe = document.getElementById('gasiframe');
-      const gasAppUrl = 'https://script.google.com/macros/s/AKfycbyJGwT4o8uYowfAnEypcj0E4BLJOlZTAN8CLHeISij0tqD8dMjpkzAXaG9WKpwOlJEt/exec'; // ← GAS公開URL
-      iframe.src = gasAppUrl + window.location.search;
-    };
-  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>📝 翻訳アプリ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body>
-  <iframe id="gasiframe" src="about:blank"></iframe>
+<body class="bg-light">
+  <div class="container py-4">
+    <div class="d-flex justify-content-end mb-3">
+      <span id="userEmail" class="me-3"></span>
+      <button id="loginBtn" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#loginModal">ログイン</button>
+      <button id="registerBtn" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#registerModal">新規登録</button>
+      <button id="logoutBtn" class="btn btn-danger me-2 d-none">ログアウト</button>
+      <button id="apiKeyBtn" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#apiKeyModal">APIキー設定</button>
+      <button id="bookmarkBtn" class="btn btn-outline-primary" data-bs-toggle="offcanvas" data-bs-target="#bookmarkSidebar" hidden>📚 ブックマーク</button>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="mb-2"><span id="srcInfo">翻訳元</span></div>
+        <textarea id="inputText" class="form-control mb-3" rows="6" placeholder="ここに翻訳したいテキストを入力…"></textarea>
+        <button id="translateBtn" class="btn btn-primary me-2">翻訳する</button>
+        <button id="saveBtn" class="btn btn-success" disabled>🔖 ブックマーク</button>
+      </div>
+      <div class="col-md-6">
+        <div class="mb-2"><span id="tgtInfo">翻訳先</span></div>
+        <div id="result" class="border bg-white p-3" style="min-height: 240px;">
+          <div class="text-muted text-center py-5">翻訳結果がここに表示されます</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offcanvas Sidebar for Bookmarks -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="bookmarkSidebar">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title">📚 ブックマーク</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body" id="bookmarkList"></div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Login Modal -->
+  <div class="modal fade" id="loginModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">ログイン</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input id="loginEmail" type="email" class="form-control mb-2" placeholder="メールアドレス">
+        <input id="loginPassword" type="password" class="form-control" placeholder="パスワード">
+      </div>
+      <div class="modal-footer">
+        <button id="loginSubmitBtn" type="button" class="btn btn-primary">ログイン</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Register Modal -->
+  <div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">新規登録</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input id="registerEmail" type="email" class="form-control mb-2" placeholder="メールアドレス">
+        <input id="registerPassword" type="password" class="form-control" placeholder="パスワード">
+      </div>
+      <div class="modal-footer">
+        <button id="registerSubmitBtn" type="button" class="btn btn-success">登録</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- API Key Modal -->
+  <div class="modal fade" id="apiKeyModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🔑 Gemini APIキー設定</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input id="apiKeyInput" type="text" class="form-control" placeholder="APIキーを入力">
+      </div>
+      <div class="modal-footer">
+        <button id="apiKeySaveBtn" type="button" class="btn btn-secondary">保存</button>
+      </div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
