@@ -1,17 +1,9 @@
-// app.js
-import { db, auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from './firebase-config.js';
+import { db } from './firebase-config.js';
 import { collection, addDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-const loginBtn = document.getElementById('loginBtn');
-const registerBtn = document.getElementById('registerBtn');
-const logoutBtn = document.getElementById('logoutBtn');
-const userEmail = document.getElementById('userEmail');
-const loginEmail = document.getElementById('loginEmail');
-const loginPassword = document.getElementById('loginPassword');
-const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-const registerEmail = document.getElementById('registerEmail');
-const registerPassword = document.getElementById('registerPassword');
-const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+// Elements
+const mobileMenu = document.getElementById('mobileMenu');
+const mobileBookmarkBtn = document.getElementById('mobileBookmarkBtn');
 const apiKeyInput = document.getElementById('apiKeyInput');
 const apiKeySaveBtn = document.getElementById('apiKeySaveBtn');
 const translateBtn = document.getElementById('translateBtn');
@@ -22,68 +14,86 @@ const srcInfo = document.getElementById('srcInfo');
 const tgtInfo = document.getElementById('tgtInfo');
 const bookmarkBtn = document.getElementById('bookmarkBtn');
 const bookmarkList = document.getElementById('bookmarkList');
+const loginCode = document.getElementById('loginCode');
+const generatedCode = document.getElementById('generatedCode');
+const generateCodeBtn = document.getElementById('generateCodeBtn');
+const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+const registerSubmitBtn = document.getElementById('registerSubmitBtn');
 
 let currentTranslation = '';
 let currentLangs = {};
-let currentUid = null;
+let userCode = localStorage.getItem('userCode') || null;
 
-// Load saved API key
+// Offcanvas bookmark trigger for mobile
+mobileBookmarkBtn.addEventListener('click', () => {
+  bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('bookmarkSidebar')).show();
+  bootstrap.Offcanvas.getOrCreateInstance(mobileMenu).hide();
+});
+
+// API Key handling
 apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
 apiKeySaveBtn.addEventListener('click', () => {
   localStorage.setItem('geminiApiKey', apiKeyInput.value.trim());
-  const modal = bootstrap.Modal.getInstance(document.getElementById('apiKeyModal'));
-  modal.hide();
+  bootstrap.Modal.getInstance(document.getElementById('apiKeyModal')).hide();
 });
 
-// Auth state observer
-onAuthStateChanged(auth, user => {
-  if (user) {
-    currentUid = user.uid;
-    userEmail.textContent = user.email || '匿名';
-    loginBtn.classList.add('d-none');
-    registerBtn.classList.add('d-none');
-    logoutBtn.classList.remove('d-none');
-    bookmarkBtn.removeAttribute('hidden');
-    loadBookmarks();
-  } else {
-    currentUid = null;
-    userEmail.textContent = '';
-    loginBtn.classList.remove('d-none');
-    registerBtn.classList.remove('d-none');
-    logoutBtn.classList.add('d-none');
-    bookmarkBtn.setAttribute('hidden', '');
-    bookmarkList.innerHTML = '';
+// Account: code generation and login
+function formatCode(raw) {
+  return raw.match(/.{1,4}/g).join('-');
+}
+
+generateCodeBtn.addEventListener('click', () => {
+  const raw = Array.from({length:16},()=>(Math.floor(Math.random()*10))).join('');
+  const formatted = formatCode(raw);
+  generatedCode.textContent = formatted;
+});
+
+registerSubmitBtn.addEventListener('click', () => {
+  userCode = generatedCode.textContent;
+  localStorage.setItem('userCode', userCode);
+  updateAccountUI();
+  bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
+});
+
+loginSubmitBtn.addEventListener('click', () => {
+  const code = loginCode.value.trim();
+  if (code) {
+    userCode = code;
+    localStorage.setItem('userCode', userCode);
+    updateAccountUI();
+    bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
   }
 });
 
-// Login
-loginSubmitBtn.addEventListener('click', async () => {
-  try {
-    await signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value);
-    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
-  } catch (e) {
-    alert('ログイン失敗: ' + e.message);
+function updateAccountUI() {
+  if (userCode) {
+    document.getElementById('loginMenuItem').classList.add('d-none');
+    document.getElementById('logoutMenuItem').classList.remove('d-none');
+    bookmarkBtn.classList.remove('d-none');
   }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  localStorage.removeItem('userCode');
+  userCode = null;
+  document.getElementById('loginMenuItem').classList.remove('d-none');
+  document.getElementById('logoutMenuItem').classList.add('d-none');
+  bookmarkBtn.classList.add('d-none');
+  bookmarkList.innerHTML = '';
 });
 
-// Register
-registerSubmitBtn.addEventListener('click', async () => {
-  try {
-    await createUserWithEmailAndPassword(auth, registerEmail.value, registerPassword.value);
-    bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
-  } catch (e) {
-    alert('登録失敗: ' + e.message);
-  }
-});
+// Initialize account UI
+updateAccountUI();
 
-// Logout
-logoutBtn.addEventListener('click', () => signOut(auth));
-
-// Translate
+// Translation
 translateBtn.addEventListener('click', async () => {
   const apiKey = localStorage.getItem('geminiApiKey');
   const text = inputText.value.trim();
-  if (!apiKey || !text) return;
+  if (!apiKey) {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('apiKeyModal')).show();
+    return;
+  }
+  if (!text) return;
 
   currentLangs = detectLangs(text);
   srcInfo.textContent = `翻訳元（${currentLangs.src==='ja'?'日本語':'한국어'}）`;
@@ -109,19 +119,22 @@ translateBtn.addEventListener('click', async () => {
     if (!out) throw new Error('候補がありませんでした');
     currentTranslation = out;
     resultBox.innerHTML = `<div class="markdown-body">${marked.parse(out)}</div>`;
-    saveBtn.disabled = !currentUid;
+    saveBtn.disabled = !userCode;
   } catch (e) {
     console.error(e);
     resultBox.innerHTML = `<div class="text-danger">⚠️ 翻訳失敗: ${e.message}</div>`;
+    if (/api key/i.test(e.message)) {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('apiKeyModal')).show();
+    }
   }
 });
 
 // Save Bookmark
 saveBtn.addEventListener('click', async () => {
-  if (!currentUid) return;
+  if (!userCode) return;
   try {
     await addDoc(collection(db,'translations'),{
-      userId:currentUid,
+      userCode,
       timestamp:Date.now(),
       original:inputText.value.trim(),
       translated:currentTranslation,
@@ -137,8 +150,8 @@ saveBtn.addEventListener('click', async () => {
 // Load Bookmarks
 async function loadBookmarks() {
   bookmarkList.innerHTML = '';
-  if (!currentUid) return;
-  const q = query(collection(db,'translations'),where('userId','==',currentUid));
+  if (!userCode) return;
+  const q = query(collection(db,'translations'),where('userCode','==',userCode));
   const snap = await getDocs(q);
   snap.forEach(doc => {
     const d = doc.data();
@@ -146,12 +159,12 @@ async function loadBookmarks() {
     card.className = 'card mb-2';
     card.innerHTML = `
       <div class="card-body p-2">
-        <div class="d-flex justify-content-between">
-          <small class="text-muted">${new Date(d.timestamp).toLocaleString()}</small>
-        </div>
-        <div><strong>原文:</strong> ${d.original}</div>
-        <div><strong>訳文:</strong> ${d.translated}</div>
-      </div>`;
+        <div class="d-flex justify-content mellom">` +
+        `<small class="text-muted">${new Date(d.timestamp).toLocaleString()}</small>` +
+        `</div>` +
+        `<div><strong>原文:</strong> ${d.original}</div>` +
+        `<div><strong>訳文:</strong> ${d.translated}</div>` +
+      `</div>`;
     bookmarkList.appendChild(card);
   });
 }
@@ -168,6 +181,6 @@ function generatePrompt(text, src) {
   if (src === 'ja') {
     return `あなたは韓国人向けの翻訳アプリです。以下の日本語を韓国語に自然に翻訳し、背景や文化、例文を韓国語で詳しく説明してください。\n\n翻訳元：${text}`;
   } else {
-    return `당신은 일본어 학습을 위한 번역기입니다. 아래의 한국어 문장을 자연스러운 일본語로 번역하고、意味や用法を日本語で説明してください。\n\n번역元：${text}`;
+    return `당신은 사람向けの 번역기…(省略)`;
   }
 }
