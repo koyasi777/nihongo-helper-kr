@@ -67,8 +67,8 @@
         <div class="lang-label" id="srcInfo">翻訳元</div>
         <textarea id="inputText" class="form-control mb-3" rows="6" placeholder="ここに翻訳したいテキストを入力…"></textarea>
         <div class="d-grid gap-2 d-md-flex">
-          <button id="translateBtn" class="btn btn-primary me-2">翻訳する</button>
-          <button id="saveBtn" class="btn btn-success" disabled>🔖 ブックマーク</button>
+          <button id="translateBtn" class="btn btn-primary me-2 w-100 w-md-auto">翻訳する</button>
+          <button id="saveBtn" class="btn btn-success w-100 w-md-auto" disabled>🔖 ブックマーク</button>
         </div>
       </div>
       <div class="col-md-6">
@@ -98,8 +98,8 @@
       </div>
       <div class="modal-body">
         <ul class="nav nav-tabs mb-3" role="tablist">
-          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#loginPane">ログイン</button></li>
-          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#registerPane">新規登録</button></li>
+          <li class="nav-item"><button id="login-tab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#loginPane">ログイン</button></li>
+          <li class="nav-item"><button id="register-tab" class="nav-link" data-bs-toggle="tab" data-bs-target="#registerPane">新規登録</button></li>
         </ul>
         <div class="tab-content">
           <!-- Login Pane -->
@@ -112,6 +112,7 @@
               <div id="generatedCode" class="hyphen-code fs-5 text-center">0000-0000-0000-0000</div>
             </div>
             <button id="generateCodeBtn" class="btn btn-outline-primary w-100">コードを生成</button>
+            <button id="copyCodeBtn" class="btn btn-outline-secondary w-100 mt-2 d-none">コピー</button>
           </div>
         </div>
       </div>
